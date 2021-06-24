@@ -4,14 +4,14 @@ const fs = require("fs");
 
 const upload = async (req, res) => {
     try {
+        const originalFilename = req.params.originalName;
         await uploadFile(req, res);
 
         if (req.file == undefined) {
             return res.status(400).send({ message: "Please upload a file!", success: false });
         }
-        const originalFilename = req.file.originalname;
+
         const fileName = req.file.filename;
-        console.log(req.file);
 
         res.status(200).send({
             name: fileName,
