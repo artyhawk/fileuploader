@@ -1,7 +1,7 @@
 const util = require("util");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
-const maxSize = 2 * 1024 * 1024;
+const maxSize = 25 * 1024 * 1024;
 
 let originalNameOfFile = "";
 let newNameOfFile = "";
