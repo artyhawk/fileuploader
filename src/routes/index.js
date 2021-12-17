@@ -8,6 +8,8 @@ let routes = app => {
   router.get("/api/files/:name", controller.download);
   router.delete("/api/files/:name", controller.deleteFile);
   router.get("/api/pdf/:name", controller.showPdf);
+  router.get("/api/file/converter/:originalName", controller.convertFileToPdf);
+  router.post("/api/upload/base64/:originalName", controller.uploadBase64);
   app.use(router);
 };
 

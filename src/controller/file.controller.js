@@ -1,6 +1,10 @@
 const uploadFile = require("../middleware/upload");
 const { v4: uuidv4 } = require("uuid");
-const fs = require("fs");
+const { promisify } = require("bluebird");
+const libre = require("libreoffice-convert");
+const path = require("path");
+const fs = require("fs").promises;
+let lib_convert = promisify(libre.convert);
 
 const upload = async (req, res) => {
   try {
@@ -93,10 +97,68 @@ const deleteFile = (req, res) => {
   });
 };
 
+const convertFileToPdf = async (req, res) => {
+  try {
+    const fileName = req.params.originalName;
+
+    if (!fileName) {
+      res.status(404).json({ message: "File not found" });
+    }
+
+    if (fileName) {
+      const inputPath = __basedir + `/resources/static/assets/uploads/${fileName}`;
+
+      const rightExtens = fileName.split(".")[0];
+
+      const outputPath = __basedir + `/resources/static/assets/uploads/${rightExtens}.pdf`;
+      // Read a file
+      let data = await fs.readFile(inputPath);
+      let done = await lib_convert(data, ".pdf", undefined);
+      await fs.writeFile(outputPath, done);
+      await fs.unlink(inputPath);
+      let buff = await fs.readFile(outputPath);
+      let base64data = buff.toString("base64");
+      res.json({ dataForSign: base64data, fileName: `${fileName.split(".")[0]}.pdf` });
+    }
+  } catch (error) {
+    res.json(error.message);
+  }
+};
+
+const uploadBase64 = async (req, res) => {
+  try {
+    const originalFilename = req.params.originalName;
+    await uploadFile(req, res);
+
+    if (req.file == undefined) {
+      return res.status(400).send({ message: "Please upload a file!", success: false });
+    }
+
+    const fileName = req.file.filename;
+    const filePath = __basedir + `/resources/static/assets/uploads/${fileName}`;
+    let buff = await fs.readFile(filePath);
+    let base64data = buff.toString("base64");
+
+    res.status(200).send({
+      name: fileName,
+      orginalName: originalFilename,
+      dataForSign: base64data,
+      success: true
+    });
+  } catch (err) {
+    res.status(500).send({
+      message: `Could not upload the file: ${req.params.originalName}. ${err.message}`,
+      success: false
+    });
+  }
+};
+
 module.exports = {
   upload,
   getListFiles,
   download,
   deleteFile,
-  showPdf
+  showPdf,
+  convertFileToPdf,
+  uploadBase64
 };
