@@ -5,6 +5,7 @@ const libre = require("libreoffice-convert");
 const path = require("path");
 const fs = require("fs").promises;
 let lib_convert = promisify(libre.convert);
+const merge = require("easy-pdf-merge");
 
 const upload = async (req, res) => {
   try {
@@ -152,6 +153,65 @@ const uploadBase64 = async (req, res) => {
     });
   }
 };
+const convertBase64 = async (req, res) => {
+  try {
+    const fileName = req.params.originalName;
+    if (!fileName) {
+      res.status(404).json({ message: "File not found" });
+    }
+
+    if (fileName) {
+      const inputPath = __basedir + `/resources/static/assets/uploads/${fileName}`;
+      let buff = await fs.readFile(inputPath);
+      let base64data = buff.toString("base64");
+      res.json({ dataForSign: base64data });
+    }
+  } catch (err) {
+    res.status(500).send({
+      message: `Could not convert the file: ${req.params.originalName}. ${err.message}`,
+      success: false
+    });
+  }
+};
+
+const mergePdf = async (req, res) => {
+  try {
+    const originalFileName = req.params.originalName;
+    const signedFilePartName = req.params.signedName;
+    const originalFilePath = __basedir + `/resources/static/assets/uploads/${originalFileName}`;
+
+    // const fileName = req.file.filename;
+    const signedFilePath = __basedir + `/resources/static/assets/uploads/${signedFilePartName}`;
+
+    const uniqueName = uuidv4();
+
+    const mergedPdfPath = __basedir + `/resources/static/assets/uploads/${uniqueName}.pdf`;
+    await merge([originalFilePath, signedFilePath], mergedPdfPath, function (err) {
+      if (err) {
+        return console.log(err);
+      }
+      fs.unlink(signedFilePath, err => {
+        if (err) {
+          console.error(err);
+          res.status(500).json({
+            success: false,
+            message: "Server error has been occured"
+          });
+        }
+      });
+    });
+
+    res.status(200).send({
+      signedFileName: `${uniqueName}.pdf`,
+      success: true
+    });
+  } catch (err) {
+    res.status(500).send({
+      message: `Server error. ${err.message}`,
+      success: false
+    });
+  }
+};
 
 module.exports = {
   upload,
@@ -160,5 +220,7 @@ module.exports = {
   deleteFile,
   showPdf,
   convertFileToPdf,
-  uploadBase64
+  uploadBase64,
+  convertBase64,
+  mergePdf
 };

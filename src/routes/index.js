@@ -10,6 +10,8 @@ let routes = app => {
   router.get("/api/pdf/:name", controller.showPdf);
   router.get("/api/file/converter/:originalName", controller.convertFileToPdf);
   router.post("/api/upload/base64/:originalName", controller.uploadBase64);
+  router.get("/api/files/base64/:originalName", controller.convertBase64);
+  router.get("/api/pdf/merge/:originalName/:signedName", controller.mergePdf);
   app.use(router);
 };
 
